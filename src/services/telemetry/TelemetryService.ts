@@ -302,7 +302,6 @@ export class TelemetryService {
 	 * Records when voice recording is started
 	 * @param taskId Optional task identifier if recording was started during a task
 	 * @param platform The platform where recording is happening (macOS, Windows, Linux)
-	 * @param collect If true, collect event instead of sending
 	 */
 	public captureVoiceRecordingStarted(taskId?: string, platform?: string) {
 		if (!this.isCategoryEnabled("dictation")) {
@@ -325,7 +324,6 @@ export class TelemetryService {
 	 * @param durationMs Duration of the recording in milliseconds
 	 * @param success Whether the recording was successful
 	 * @param platform The platform where recording happened
-	 * @param collect If true, collect event instead of sending
 	 */
 	public captureVoiceRecordingStopped(taskId?: string, durationMs?: number, success?: boolean, platform?: string) {
 		if (!this.isCategoryEnabled("dictation")) {
@@ -349,7 +347,6 @@ export class TelemetryService {
 	 * @param taskId Optional task identifier if transcription was started during a task
 	 * @param audioSizeBytes Size of the audio data being transcribed
 	 * @param language Language hint provided for transcription
-	 * @param collect If true, collect event instead of sending
 	 */
 	public captureVoiceTranscriptionStarted(taskId?: string, language?: string) {
 		if (!this.isCategoryEnabled("dictation")) {
@@ -404,7 +401,6 @@ export class TelemetryService {
 	 * @param errorType Type of error that occurred (e.g., "no_openai_key", "api_error", "network_error")
 	 * @param errorMessage The error message
 	 * @param durationMs Time taken before failure in milliseconds
-	 * @param collect If true, collect event instead of sending
 	 */
 	public captureVoiceTranscriptionError(taskId?: string, errorType?: string, errorMessage?: string, durationMs?: number) {
 		if (!this.isCategoryEnabled("dictation")) {
