@@ -31,24 +31,20 @@ export const transcribeAudio = async (controller: Controller, request: Transcrib
 				errorType = "insufficient_credits"
 			} else if (result.error.includes("Invalid audio format")) {
 				errorType = "invalid_audio_format"
+			} else if (result.error.includes("No internet connection")) {
+				errorType = "no_internet"
 			} else if (result.error.includes("Cannot connect")) {
 				errorType = "connection_error"
+			} else if (result.error.includes("Connection timed out")) {
+				errorType = "timeout_error"
 			} else if (result.error.includes("Network error")) {
 				errorType = "network_error"
 			}
 
 			telemetryService.captureVoiceTranscriptionError(taskId, errorType, result.error, durationMs)
 
-			let errorMessage = ""
-			if (result.error.includes("Authentication failed")) {
-				errorMessage = "Authentication failed. Please log in again."
-			} else if (result.error.includes("Insufficient credits")) {
-				errorMessage = "Insufficient credits for transcription service."
-			} else if (result.error.includes("Cannot connect")) {
-				errorMessage = "Cannot connect to transcription service."
-			} else {
-				errorMessage = `Voice transcription failed: ${result.error}`
-			}
+			// Use the error message directly from the service as it's already user-friendly
+			const errorMessage = result.error
 
 			HostProvider.window.showMessage({
 				type: ShowMessageType.ERROR,

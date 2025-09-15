@@ -46,6 +46,21 @@ export class VoiceTranscriptionService {
 				const status = error.response?.status
 				const message = error.response?.data?.message || error.message
 
+				// Check for network errors FIRST (these don't have status codes)
+				if (message.includes("ENOTFOUND")) {
+					return { error: "No internet connection. Please check your network and try again." }
+				}
+				if (message.includes("ECONNREFUSED")) {
+					return { error: "Cannot connect to transcription service. Please check your internet connection." }
+				}
+				if (message.includes("ETIMEDOUT") || message.includes("ECONNRESET")) {
+					return { error: "Connection timed out. Please check your internet connection and try again." }
+				}
+				if (message.includes("Network Error")) {
+					return { error: "Network error. Please check your internet connection." }
+				}
+
+				// Then check status codes for server responses
 				switch (status) {
 					case 401:
 						return { error: "Authentication failed. Please reauthenticate your Cline account" }
@@ -56,14 +71,26 @@ export class VoiceTranscriptionService {
 					case 500:
 						return { error: "Transcription server error. Please try again later." }
 					default:
+						// Only show the raw message if it's not a network error we already handled
 						return { error: `Transcription failed: ${message}` }
 				}
 			}
 
 			// Handle network errors
 			const errorMessage = error instanceof Error ? error.message : String(error)
+
+			// Handle DNS/network errors when WiFi is down
+			if (errorMessage.includes("ENOTFOUND")) {
+				return { error: "No internet connection. Please check your network and try again." }
+			}
+
 			if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("Network Error")) {
-				return { error: "Cannot connect to transcription service." }
+				return { error: "Cannot connect to transcription service. Please check your internet connection." }
+			}
+
+			// Handle timeout errors
+			if (errorMessage.includes("ETIMEDOUT") || errorMessage.includes("ECONNRESET")) {
+				return { error: "Connection timed out. Please check your internet connection and try again." }
 			}
 
 			return { error: `Network error: ${errorMessage}` }
