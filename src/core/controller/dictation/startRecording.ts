@@ -23,6 +23,13 @@ export const startRecording = async (controller: Controller): Promise<RecordingR
 
 		if (result.success) {
 			telemetryService.captureVoiceRecordingStarted(taskId, process.platform)
+		} else if (result.error && result.error.includes("FFmpeg")) {
+			// If FFmpeg is missing, create a task in the chat with the installation instructions
+			await controller.initTask(result.error)
+			return RecordingResult.create({
+				success: false,
+				error: "FFmpeg installation instructions have been sent to the chat",
+			})
 		}
 
 		return RecordingResult.create({
