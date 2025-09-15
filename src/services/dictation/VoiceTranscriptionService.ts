@@ -81,7 +81,9 @@ export class VoiceTranscriptionService {
 			}
 
 			// Default case for unhandled status codes
-			return { error: `Transcription failed: ${rawMessage}` }
+			return {
+				error: "Transcription failed. Please try again later or raise an issue on https://github.com/cline/cline/issues",
+			}
 		}
 
 		// Handle non-axios errors (general network errors)
