@@ -12,24 +12,21 @@ export const cancelRecording = async (controller: Controller): Promise<Recording
 	const taskId = controller.task?.taskId
 	const recordingStatus = audioRecordingService.getRecordingStatus()
 	const recordingDuration = recordingStatus.durationSeconds * 1000 // Convert to milliseconds
-
+	let errorMessage = ""
+	let isSuccess = true
 	try {
 		const result = await audioRecordingService.cancelRecording()
-
-		telemetryService.captureVoiceRecordingStopped(taskId, recordingDuration, false, process.platform)
-
-		return RecordingResult.create({
-			success: result.success,
-			error: result.error ?? "",
-		})
+		isSuccess = !!result?.success
+		errorMessage = result?.error ?? ""
 	} catch (error) {
 		console.error("Error canceling recording:", error)
-
-		telemetryService.captureVoiceRecordingStopped(taskId, recordingDuration, false, process.platform)
-
-		return RecordingResult.create({
-			success: false,
-			error: error instanceof Error ? error.message : "Unknown error occurred",
-		})
+		isSuccess = false
+		errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
 	}
+
+	telemetryService.captureVoiceRecordingStopped(taskId, recordingDuration, false, process.platform)
+	return RecordingResult.create({
+		success: isSuccess,
+		error: errorMessage ?? "",
+	})
 }
