@@ -44,7 +44,8 @@ export class VoiceTranscriptionService {
 			// Handle axios errors with proper status code mapping
 			if (axios.isAxiosError(error)) {
 				const status = error.response?.status
-				const message = error.response?.data?.message || error.message
+				// Extract error message from server response - check both 'error' and 'message' fields
+				const message = error.response?.data?.error || error.response?.data?.message || error.message
 
 				// Check for network errors FIRST (these don't have status codes)
 				if (message.includes("ENOTFOUND")) {
@@ -67,7 +68,21 @@ export class VoiceTranscriptionService {
 					case 402:
 						return { error: "Insufficient credits for transcription service." }
 					case 400:
-						return { error: "Invalid audio format or request data." }
+						// Parse the actual error message from the server
+						if (
+							message.toLowerCase().includes("insufficient balance") ||
+							message.toLowerCase().includes("insufficient credits")
+						) {
+							return { error: "Insufficient credits for transcription service." }
+						}
+						if (message.toLowerCase().includes("invalid audio") || message.toLowerCase().includes("invalid format")) {
+							return { error: "Invalid audio format. Please try recording again." }
+						}
+						if (message.toLowerCase().includes("exceeds") && message.toLowerCase().includes("limit")) {
+							return { error: message } // Show the actual limit exceeded message
+						}
+						// For other 400 errors, show the server's message if available, otherwise use generic
+						return { error: message || "Invalid audio format or request data." }
 					case 500:
 						return { error: "Transcription server error. Please try again later." }
 					default:
