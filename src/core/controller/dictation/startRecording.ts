@@ -28,7 +28,7 @@ export const startRecording = async (controller: Controller): Promise<RecordingR
 			await controller.initTask(result.error)
 			return RecordingResult.create({
 				success: false,
-				error: "FFmpeg installation instructions have been sent to the chat",
+				error: "Your system is missing FFmpeg and the installation instructions have been sent to the chat",
 			})
 		}
 
