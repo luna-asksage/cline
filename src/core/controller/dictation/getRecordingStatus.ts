@@ -12,7 +12,7 @@ export const getRecordingStatus = async (): Promise<RecordingStatus> => {
 		return RecordingStatus.create({
 			isRecording: status.isRecording,
 			durationSeconds: status.durationSeconds,
-			error: status.error || "",
+			error: status.error ?? "",
 		})
 	} catch (error) {
 		console.error("Error getting recording status:", error)
