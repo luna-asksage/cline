@@ -568,6 +568,10 @@ async function getBinaryLocation(name: string): Promise<string> {
 
 // This method is called when your extension is deactivated
 export async function deactivate() {
+	// Clean up audio recording service to ensure no orphaned processes
+	const { audioRecordingService } = await import("./services/dictation/AudioRecordingService")
+	audioRecordingService.cleanup()
+
 	tearDown()
 
 	// Clean up test mode

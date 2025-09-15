@@ -23,8 +23,23 @@ export class AudioRecordingService {
 
 	async startRecording(): Promise<{ success: boolean; error?: string }> {
 		try {
+			// Clean up any potential stale state before starting
+			// This handles the case where isRecording is true but the process is dead
 			if (this.isRecording) {
-				return { success: false, error: "Already recording" }
+				// Check if the process is actually still alive
+				if (!this.recordingProcess || this.recordingProcess.killed || this.recordingProcess.exitCode !== null) {
+					Logger.warn("Found stale recording state, cleaning up...")
+					this.cleanup()
+				} else {
+					// Process appears to be alive, don't allow double recording
+					return { success: false, error: "Already recording" }
+				}
+			}
+
+			// Also clean up if we have a process but isRecording is false (shouldn't happen but defensive)
+			if (!this.isRecording && this.recordingProcess) {
+				Logger.warn("Found orphaned recording process, cleaning up...")
+				this.cleanup()
 			}
 
 			// Check if recording software is available
