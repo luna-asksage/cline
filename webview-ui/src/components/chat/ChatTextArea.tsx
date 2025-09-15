@@ -521,10 +521,6 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			},
 			[setInputValue, slashCommandsQuery],
 		)
-		const handleSetVoiceRecording = (isRecording: boolean) => {
-			setIsVoiceRecording(isRecording)
-			sendingDisabled = isRecording
-		}
 		const handleKeyDown = useCallback(
 			(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
 				if (showSlashCommandsMenu) {
@@ -1728,7 +1724,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 										}
 										// When processing is done, the onTranscription callback will handle the final text
 									}}
-									onRecordingStateChange={handleSetVoiceRecording}
+									onRecordingStateChange={setIsVoiceRecording}
 									onTranscription={(text) => {
 										// Remove any processing text first
 										const processingPattern = /\s*\[Transcribing\.\.\.\]$/
