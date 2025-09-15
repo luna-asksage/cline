@@ -252,7 +252,7 @@ export class ClineAccountService {
 			method: "POST",
 			data: {
 				audioData: audioBase64,
-				language: language || "en",
+				language: language ?? "en",
 			},
 		})
 

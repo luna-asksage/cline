@@ -3,7 +3,7 @@ import axios from "axios"
 import { ClineAccountService } from "@/services/account/ClineAccountService"
 
 export class VoiceTranscriptionService {
-	private clineAccountService: ClineAccountService
+	private readonly clineAccountService: ClineAccountService
 
 	constructor() {
 		this.clineAccountService = ClineAccountService.getInstance()

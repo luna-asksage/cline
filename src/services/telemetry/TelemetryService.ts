@@ -313,7 +313,7 @@ export class TelemetryService {
 			event: TelemetryService.EVENTS.DICTATION.RECORDING_STARTED,
 			properties: {
 				taskId,
-				platform: platform || process.platform,
+				platform: platform ?? process.platform,
 				timestamp: new Date().toISOString(),
 			},
 		})
@@ -338,7 +338,7 @@ export class TelemetryService {
 				taskId,
 				durationMs,
 				success,
-				platform: platform || process.platform,
+				platform: platform ?? process.platform,
 				timestamp: new Date().toISOString(),
 			},
 		})
