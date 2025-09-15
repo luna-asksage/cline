@@ -40,15 +40,21 @@ export const startRecording = async (controller: Controller): Promise<RecordingR
 		console.error("Error starting recording:", error)
 		const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
 
-		const signInAction = "Sign in to Cline"
-		const action = await HostProvider.window.showMessage({
-			type: ShowMessageType.ERROR,
-			message: `Voice recording error: ${errorMessage}`,
-			options: { items: [signInAction] },
-		})
+		// Wrap showMessage in try/catch to handle potential UI errors
+		try {
+			const signInAction = "Sign in to Cline"
+			const action = await HostProvider.window.showMessage({
+				type: ShowMessageType.ERROR,
+				message: `Voice recording error: ${errorMessage}`,
+				options: { items: [signInAction] },
+			})
 
-		if (action.selectedOption === signInAction) {
-			await controller.authService.createAuthRequest()
+			if (action.selectedOption === signInAction) {
+				await controller.authService.createAuthRequest()
+			}
+		} catch (showMessageError) {
+			// Log the UI error but don't let it prevent us from returning the original error
+			console.error("Failed to show error message to user:", showMessageError)
 		}
 
 		return RecordingResult.create({
