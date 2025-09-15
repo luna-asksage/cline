@@ -20,7 +20,7 @@ export const cancelRecording = async (controller: Controller): Promise<Recording
 
 		return RecordingResult.create({
 			success: result.success,
-			error: result.error || "",
+			error: result.error ?? "",
 		})
 	} catch (error) {
 		console.error("Error canceling recording:", error)

@@ -21,8 +21,6 @@ export class AudioRecordingService {
 	private startTime: number = 0
 	private outputFile: string = ""
 
-	constructor() {}
-
 	async startRecording(): Promise<{ success: boolean; error?: string }> {
 		try {
 			if (this.isRecording) {

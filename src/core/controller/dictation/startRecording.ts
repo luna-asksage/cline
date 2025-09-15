@@ -34,7 +34,7 @@ export const startRecording = async (controller: Controller): Promise<RecordingR
 
 		return RecordingResult.create({
 			success: result.success,
-			error: result.error || "",
+			error: result.error ?? "",
 		})
 	} catch (error) {
 		console.error("Error starting recording:", error)

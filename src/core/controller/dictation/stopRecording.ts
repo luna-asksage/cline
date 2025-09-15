@@ -20,8 +20,8 @@ export const stopRecording = async (controller: Controller): Promise<RecordedAud
 
 		return RecordedAudio.create({
 			success: result.success,
-			audioBase64: result.audioBase64 || "",
-			error: result.error || "",
+			audioBase64: result.audioBase64 ?? "",
+			error: result.error ?? "",
 		})
 	} catch (error) {
 		console.error("Error stopping recording:", error)

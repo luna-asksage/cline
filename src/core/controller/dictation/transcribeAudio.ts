@@ -16,11 +16,11 @@ export const transcribeAudio = async (controller: Controller, request: Transcrib
 	const startTime = Date.now()
 
 	// Capture telemetry for transcription start
-	telemetryService.captureVoiceTranscriptionStarted(taskId, request.language || "en")
+	telemetryService.captureVoiceTranscriptionStarted(taskId, request.language ?? "en")
 
 	try {
 		// Transcribe the audio
-		const result = await getVoiceTranscriptionService().transcribeAudio(request.audioBase64, request.language || "en")
+		const result = await getVoiceTranscriptionService().transcribeAudio(request.audioBase64, request.language ?? "en")
 		const durationMs = Date.now() - startTime
 
 		if (result.error) {
@@ -51,12 +51,12 @@ export const transcribeAudio = async (controller: Controller, request: Transcrib
 				message: errorMessage,
 			})
 		} else if (result.text) {
-			telemetryService.captureVoiceTranscriptionCompleted(taskId, result.text.length, durationMs, request.language || "en")
+			telemetryService.captureVoiceTranscriptionCompleted(taskId, result.text.length, durationMs, request.language ?? "en")
 		}
 
 		return Transcription.create({
-			text: result.text || "",
-			error: result.error || "",
+			text: result.text ?? "",
+			error: result.error ?? "",
 		})
 	} catch (error) {
 		console.error("Error transcribing audio:", error)
