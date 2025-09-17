@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.28.5
+
+### Patch Changes
+
+- fd3abdc: Screen readers now properly announce buttons in history preview and history view screens.
+- e8ba3c3: dev: set up storybook
+- 7ecf395: Adding Workspace path adapter and workspace hints logic for tools
+- ac41b0d: Screen readers properly announce buttons in the MCP servers / Cline rules / workflows screens. Reflects the current selection of Cline rules / workflows tab to screen readers.
+- fadcd7e: sap provider - set sapAiCoreUseOrchestrationMode in state-helper instead of in sap provider components
+- 0b5e8f5: Moving grpc recorder as unit tests
+- fe37ca9: Add environment variable injection to esbuild config
+
 ## [3.28.4]
 
 - Fix bug where some Windows machines had API request hanging
