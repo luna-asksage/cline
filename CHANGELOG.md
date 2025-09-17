@@ -2,8 +2,6 @@
 
 ## 3.28.5
 
-### Patch Changes
-
 - fd3abdc: Screen readers now properly announce buttons in history preview and history view screens.
 - e8ba3c3: dev: set up storybook
 - 7ecf395: Adding Workspace path adapter and workspace hints logic for tools
