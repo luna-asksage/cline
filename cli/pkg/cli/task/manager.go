@@ -106,7 +106,7 @@ func (m *Manager) GetCurrentInstance() string {
 }
 
 // CreateTask creates a new task
-func (m *Manager) CreateTask(ctx context.Context, prompt string, images, files []string, workspacePaths []string) (string, error) {
+func (m *Manager) CreateTask(ctx context.Context, prompt string, images, files []string, workspacePaths []string, settingsFlags []string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -121,6 +121,9 @@ func (m *Manager) CreateTask(ctx context.Context, prompt string, images, files [
 		if len(workspacePaths) > 0 {
 			m.renderer.RenderDebug("Workspaces: %v", workspacePaths)
 		}
+		if len(settingsFlags) > 0 {
+			m.renderer.RenderDebug("Settings: %v", settingsFlags)
+		}
 	}
 
 	// Check if there's an active task and cancel it first
@@ -128,11 +131,22 @@ func (m *Manager) CreateTask(ctx context.Context, prompt string, images, files [
 		return "", fmt.Errorf("failed to cancel existing task: %w", err)
 	}
 
+	// Parse task settings if provided
+	var taskSettings *cline.TaskSettings
+	if len(settingsFlags) > 0 {
+		var err error
+		taskSettings, err = ParseTaskSettings(settingsFlags)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse task settings: %w", err)
+		}
+	}
+
 	// Create task request
 	req := &cline.NewTaskRequest{
-		Text:           prompt,
-		Images:         images,
-		Files:          files,
+		Text:         prompt,
+		Images:       images,
+		Files:        files,
+		TaskSettings: taskSettings,
 	}
 
 	resp, err := m.client.Task.NewTask(ctx, req)
@@ -184,9 +198,36 @@ func (m *Manager) cancelExistingTaskIfNeeded(ctx context.Context) error {
 				fmt.Println("Cancelled existing task to start new one")
 			}
 		}
-	} 
+	}
 
 	return nil
+}
+
+// ValidateCheckpointExists checks if a checkpoint ID is valid
+func (m *Manager) ValidateCheckpointExists(ctx context.Context, checkpointID int64) error {
+	// Get current state
+	state, err := m.client.State.GetLatestState(ctx, &cline.EmptyRequest{})
+	if err != nil {
+		return fmt.Errorf("failed to get state: %w", err)
+	}
+
+	// Extract messages
+	messages, err := m.extractMessagesFromState(state.StateJson)
+	if err != nil {
+		return fmt.Errorf("failed to extract messages: %w", err)
+	}
+
+	// Find and validate the checkpoint message
+	for _, msg := range messages {
+		if msg.Timestamp == checkpointID {
+			if msg.Say != string(types.SayTypeCheckpointCreated) {
+				return fmt.Errorf("timestamp %d is not a checkpoint (type: %s)", checkpointID, msg.Type)
+			}
+			return nil // Valid checkpoint
+		}
+	}
+
+	return fmt.Errorf("checkpoint ID %d not found in task history", checkpointID)
 }
 
 // CheckSendDisabled determines if we can send a message to the current task
@@ -449,6 +490,27 @@ func (m *Manager) ResumeTask(ctx context.Context, taskID string) error {
 	return nil
 }
 
+// RestoreCheckpoint restores the task to a specific checkpoint
+func (m *Manager) RestoreCheckpoint(ctx context.Context, checkpointID int64, restoreType string) error {
+	if global.Config.Verbose {
+		m.renderer.RenderDebug("Restoring checkpoint: %d (type: %s)", checkpointID, restoreType)
+	}
+
+	// Create the checkpoint restore request
+	req := &cline.CheckpointRestoreRequest{
+		Metadata:    &cline.Metadata{},
+		Number:      checkpointID,
+		RestoreType: restoreType,
+	}
+
+	_, err := m.client.Checkpoints.CheckpointRestore(ctx, req)
+	if err != nil {
+		return fmt.Errorf("failed to restore checkpoint %d: %w", checkpointID, err)
+	}
+
+	return nil
+}
+
 // CancelTask cancels the current task
 func (m *Manager) CancelTask(ctx context.Context) error {
 	m.mu.Lock()
@@ -536,8 +598,10 @@ func (m *Manager) ShowConversation(ctx context.Context) error {
 		return nil
 	}
 
-	// Display messages
 	for i, msg := range messages {
+		if msg.Partial {
+			continue
+		}
 		m.displayMessage(msg, false, false, i)
 	}
 
@@ -749,16 +813,44 @@ func (m *Manager) processStateUpdate(stateUpdate *cline.State, coordinator *Stre
 			foundCompletion = true
 		}
 
-		// Currently handling a subset of message types for displaying
 		switch {
 		case msg.Say == string(types.SayTypeUserFeedback):
 			if !coordinator.IsProcessedInCurrentTurn("user_msg") {
+				fmt.Println()
 				m.displayMessage(msg, false, false, i)
 				coordinator.MarkProcessedInCurrentTurn("user_msg")
 			}
 
+		case msg.Say == string(types.SayTypeCommand):
+			if !coordinator.IsProcessedInCurrentTurn("command") {
+				fmt.Println()
+				m.displayMessage(msg, false, false, i)
+				coordinator.MarkProcessedInCurrentTurn("command")
+			}
+
+		case msg.Say == string(types.SayTypeCommandOutput):
+			if !coordinator.IsProcessedInCurrentTurn("command_output") {
+				m.displayMessage(msg, false, false, i)
+				coordinator.MarkProcessedInCurrentTurn("command_output")
+			}
+
+		case msg.Say == string(types.SayTypeBrowserActionLaunch):
+			if !coordinator.IsProcessedInCurrentTurn("browser_launch") {
+				fmt.Println()
+				m.displayMessage(msg, false, false, i)
+				coordinator.MarkProcessedInCurrentTurn("browser_launch")
+			}
+
+		case msg.Say == string(types.SayTypeMcpServerRequestStarted):
+			if !coordinator.IsProcessedInCurrentTurn("mcp_request") {
+				fmt.Println()
+				m.displayMessage(msg, false, false, i)
+				coordinator.MarkProcessedInCurrentTurn("mcp_request")
+			}
+
 		case msg.Say == string(types.SayTypeCheckpointCreated):
 			if !coordinator.IsProcessedInCurrentTurn("checkpoint") {
+				fmt.Println()
 				m.displayMessage(msg, false, false, i)
 				coordinator.MarkProcessedInCurrentTurn("checkpoint")
 			}
@@ -770,6 +862,12 @@ func (m *Manager) processStateUpdate(stateUpdate *cline.State, coordinator *Stre
 				m.displayMessage(msg, false, false, i)
 				coordinator.CompleteTurn(len(messages))
 				displayedUsage = true
+			}
+
+		case msg.Ask == string(types.AskTypeCommandOutput):
+			if !coordinator.IsProcessedInCurrentTurn("ask_command_output") {
+				m.displayMessage(msg, false, false, i)
+				coordinator.MarkProcessedInCurrentTurn("ask_command_output")
 			}
 		}
 	}
@@ -915,11 +1013,13 @@ func (m *Manager) loadAndDisplayRecentHistory(ctx context.Context) (int, error) 
 		fmt.Printf("--- Conversation history (%d messages) ---\n", totalMessages)
 	}
 
-	// Display recent messages
 	for i := startIndex; i < len(messages); i++ {
 		msg := messages[i]
 
-		// Display the message
+		if msg.Partial {
+			continue
+		}
+
 		m.displayMessage(msg, false, false, i)
 	}
 
